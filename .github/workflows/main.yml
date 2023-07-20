@@ -19,3 +19,6 @@ jobs:
         if: env.VULNS > 0
         run: |
           exit 1
+      - name: Output results to text file
+        run: | 
+          cat results.json | jq '[.vulnerabilities[] | select(.malicious == true)] | .[]' > malicious_vulnerabilities.txt 
