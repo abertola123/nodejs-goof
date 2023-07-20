@@ -12,6 +12,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high --json-file-output=results.json
+          command: monitor
       - name: Count number of resulting vulnerabilities
         run: |
           echo "VULNS=$(cat results.json | jq '.vulnerabilities | map(select(.malicious == true)) | length')" >> $GITHUB_ENV
