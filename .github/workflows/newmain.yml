@@ -19,17 +19,17 @@ jobs:
         if: env.VULNS > 0
         run: |
           exit 1
-      - name: Output results to text file
-        run: |
-          cat results.json | jq '[.vulnerabilities[] | select(.malicious == true)] | .[]' > malicious_vulnerabilities.txt
-      - name: Print Malicious Vulnerabilities
-        run: |
-          cat malicious_vulnerabilities.txt
+     # - name: Output results to text file
+        #run: |
+          #echo cat results.json | jq '[.vulnerabilities[] | select(.malicious == true)] | .[]' > malicious_vulnerabilities.txt
+      #- name: Print Malicious Vulnerabilities
+        #run: |
+          #cat malicious_vulnerabilities.txt
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.2
         with:
-          # Path to txt file relative to the root of the repository
-          txt_file: malicious_vulnerabilities.txt
+          # Path to json file relative to the root of the repository
+          json_file: results.json
 
 
 
