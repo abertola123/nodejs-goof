@@ -22,3 +22,6 @@ jobs:
       - name: Output results to text file
         run: | 
           cat results.json | jq '[.vulnerabilities[] | select(.malicious == true)] | .[]' > malicious_vulnerabilities.txt 
+      - name: Print Malicious Vulnerabilities
+        run: | 
+          cat malicious_vulnerabilities.txt
