@@ -30,6 +30,8 @@ jobs:
         with:
           name: malicious_vulnerabilities
           path: malicious_vulnerabilities.txt
+      - name: List files in the current directory
+        run: ls -la
 
 
 
