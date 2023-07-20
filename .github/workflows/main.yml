@@ -25,3 +25,8 @@ jobs:
       - name: Print Malicious Vulnerabilities
         run: | 
           cat malicious_vulnerabilities.txt
+      - name: Upload Malicious Vulnerabilities Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: malicious_vulnerabilities
+          path: malicious_vulnerabilities.txt
