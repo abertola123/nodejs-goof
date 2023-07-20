@@ -1,0 +1,39 @@
+name: Example workflow for Node using Snyk
+on: push
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --json-file-output=results.json
+      - name: Count number of resulting vulnerabilities
+        run: |
+          echo "VULNS=$(jq '.vulnerabilities | map(select(.malicious == true)) | length' results.json)" >> $GITHUB_ENV
+      - name: Fail if malicious vulns are found
+        if: env.VULNS > 0
+        run: |
+          exit 1
+      - name: Output results to text file
+        run: |
+          cat results.json | jq '[.vulnerabilities[] | select(.malicious == true)] | .[]' > malicious_vulnerabilities.txt
+      - name: Print Malicious Vulnerabilities
+        run: |
+          cat malicious_vulnerabilities.txt
+      - name: Upload Malicious Vulnerabilities Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: malicious_vulnerabilities
+          path: malicious_vulnerabilities.txt
+
+
+
+
+
+
+
