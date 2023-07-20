@@ -11,4 +11,4 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           with:
-          json: true
+          args: --json-file-output=snyk.json
