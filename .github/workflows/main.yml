@@ -30,3 +30,10 @@ jobs:
         with:
           name: malicious_vulnerabilities
           path: malicious_vulnerabilities.txt
+      - name: Download Malicious Vulnerabilities Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: malicious_vulnerabilities
+      - name: Print Malicious Vulnerabilities
+        run: |
+          cat malicious_vulnerabilities.txt
