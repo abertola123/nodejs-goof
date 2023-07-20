@@ -25,17 +25,11 @@ jobs:
       - name: Print Malicious Vulnerabilities
         run: |
           cat malicious_vulnerabilities.txt
-         #steps:
-      - uses: actions/checkout@v3
-      - run: mkdir -p path/to/artifact
-      - run: echo hello > path/to/artifact/malicious_vulnerabilities.txt
-      - uses: actions/upload-artifact@v3
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3.1.2
         with:
-         name: my-artifact
-         path: path/to/artifact/malicious_vulnerabilities.txt
-      - name: List files in the current directory
-        run: ls -la
-
+          # Path to txt file relative to the root of the repository
+          txt_file: malicious_vulnerabilities.txt
 
 
 
