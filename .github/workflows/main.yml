@@ -11,4 +11,11 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          json: true
+          args: --severity-threshold=high --json-file-output=results.json
+      - name: Count number of resulting vulnerabilities
+        run: |
+          echo "VULNS=$(cat results.json | jq '.vulnerabilities | map(select(.malicious == true)) | length')" >> $GITHUB_ENV
+      - name: Fail if mailicious vulns are found
+        if: env.VULNS > 0
+        run: |
+          exit 1
