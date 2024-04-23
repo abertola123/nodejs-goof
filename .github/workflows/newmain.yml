@@ -25,6 +25,7 @@ jobs:
         if: env.VULNS > 0
         run: |
           exit 1
+          
      
 
 
