@@ -1,4 +1,4 @@
-name: Snyk SBOM Demo
+name: Snyk SBOM
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   snyk-sbom:
-    name: Generate & Export SBOM
+    name: Generate SBOM
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,7 +17,6 @@ jobs:
         with:
           node-version: '18'
 
-      # npm install is required so Snyk can resolve the full dependency tree
       - name: Install dependencies
         run: npm install --ignore-scripts
 
@@ -27,33 +26,6 @@ jobs:
       - name: Authenticate Snyk
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
-      # ── STEP 1: Monitor ────────────────────────────────────────────────────
-      # Registers the project in the Snyk UI and creates a monitored snapshot.
-      # Required for the REST API step — the API pulls the SBOM from the
-      # monitored project, so this must run first.
-      # We capture the output to extract the project ID for the API call.
-      - name: Snyk monitor — register project
-        id: monitor
-        run: |
-          OUTPUT=$(snyk monitor \
-            --org=${{ secrets.SNYK_ORG_ID }} \
-            --project-name=nodejs-goof-sbom-demo \
-            --json 2>&1)
-          echo "$OUTPUT"
-
-          # Extract project ID from the explore URI
-          # URI format: https://app.snyk.io/org/<org>/project/<PROJECT_ID>/history/<snapshot>
-          PROJECT_ID=$(echo "$OUTPUT" | jq -r '.uri // empty' | grep -oE '[0-9a-f-]{36}' | head -1)
-          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
-
-          PROJECT_URL=$(echo "$OUTPUT" | jq -r '.uri // empty' | sed 's|/history/.*||')
-          echo "## Snyk Project" >> $GITHUB_STEP_SUMMARY
-          echo "[$PROJECT_URL]($PROJECT_URL)" >> $GITHUB_STEP_SUMMARY
-        continue-on-error: true
-
-      # ── STEP 2: Generate SBOM — CycloneDX 1.6 JSON ────────────────────────
-      # Industry standard — most tooling and compliance frameworks support this.
-      # Shows component inventory, package versions, purl identifiers.
       - name: Generate SBOM — CycloneDX 1.6 JSON
         run: |
           snyk sbom \
@@ -61,13 +33,6 @@ jobs:
             --org=${{ secrets.SNYK_ORG_ID }} \
             > sbom-cyclonedx.json
 
-          COMPONENT_COUNT=$(jq '.components | length' sbom-cyclonedx.json)
-          echo "## SBOM — CycloneDX 1.6 JSON" >> $GITHUB_STEP_SUMMARY
-          echo "**Components:** $COMPONENT_COUNT" >> $GITHUB_STEP_SUMMARY
-
-      # ── STEP 3: Generate SBOM — SPDX 2.3 JSON ─────────────────────────────
-      # Same project, different format — shows Snyk supports both major standards.
-      # SPDX is commonly required for US Federal / EO 14028 compliance.
       - name: Generate SBOM — SPDX 2.3 JSON
         run: |
           snyk sbom \
@@ -75,38 +40,6 @@ jobs:
             --org=${{ secrets.SNYK_ORG_ID }} \
             > sbom-spdx.json
 
-          PACKAGE_COUNT=$(jq '.packages | length' sbom-spdx.json)
-          echo "## SBOM — SPDX 2.3 JSON" >> $GITHUB_STEP_SUMMARY
-          echo "**Packages:** $PACKAGE_COUNT" >> $GITHUB_STEP_SUMMARY
-
-      # ── STEP 4: Fetch SBOM via REST API ───────────────────────────────────
-      # Pulls the SBOM from the already-monitored project via the Snyk REST API.
-      # This represents the latest monitored state — useful when you need to
-      # automate SBOM distribution without running a local scan every time
-      # (e.g. feeding into a compliance portal or vendor questionnaire workflow).
-      - name: Fetch project SBOM via REST API
-        run: |
-          PROJECT_ID="${{ steps.monitor.outputs.project_id }}"
-
-          if [ -z "$PROJECT_ID" ]; then
-            echo "Project ID not found — skipping REST API step"
-            exit 0
-          fi
-
-          echo "Fetching SBOM for project: $PROJECT_ID"
-
-          curl -sf \
-            -H "Authorization: token ${{ secrets.SNYK_TOKEN }}" \
-            "https://api.snyk.io/rest/orgs/${{ secrets.SNYK_ORG_ID }}/projects/${PROJECT_ID}/sbom?version=2024-08-22&format=cyclonedx1.6%2Bjson" \
-            -o sbom-api.json
-
-          echo "## SBOM via REST API" >> $GITHUB_STEP_SUMMARY
-          echo "Fetched from monitored project \`$PROJECT_ID\`" >> $GITHUB_STEP_SUMMARY
-        continue-on-error: true
-
-      # ── STEP 5: Upload all SBOMs as pipeline artifacts ────────────────────
-      # Makes all three files downloadable directly from the Actions run UI —
-      # demonstrate downloading and inspecting the output.
       - name: Upload SBOM artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -115,5 +48,3 @@ jobs:
           path: |
             sbom-cyclonedx.json
             sbom-spdx.json
-            sbom-api.json
-          if-no-files-found: warn
